@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AirBoard • Lousa Digital</title>
+<style>
+:root{--bg:#07111f;--panel:#0b1a2b;--line:#23405b;--text:#f5f8fc;--muted:#91a4b8;--a:#18a8ff;--b:#6d5dfc}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#123b61,#07111f 40%,#050b13);color:var(--text);font-family:Arial,system-ui,sans-serif;overflow:hidden}.app{height:100vh;display:flex;flex-direction:column}
+.top{height:64px;background:#081525e8;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 16px;backdrop-filter:blur(16px);z-index:5}.brand{display:flex;gap:10px;align-items:center;font-weight:800}.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center}.brand small{display:block;color:var(--muted);font-size:9px;font-weight:500}.actions{display:flex;gap:8px}.btn{background:#10243a;border:1px solid #294762;padding:9px 12px;border-radius:10px;color:white;cursor:pointer}.primary{background:linear-gradient(135deg,#0c9ef0,#6655ed);border:0}
+.workspace{position:relative;flex:1;min-height:0}.board{position:absolute;inset:0;width:100%;height:100%;background:white;touch-action:none}.side{position:absolute;left:14px;top:14px;bottom:14px;width:62px;background:#091827e8;border:1px solid var(--line);border-radius:18px;padding:8px;display:flex;flex-direction:column;gap:7px;z-index:3;backdrop-filter:blur(16px)}.tool{height:46px;border-radius:12px;background:transparent;color:#c8d5e2;font-size:20px;border:0;cursor:pointer}.tool.active{background:#17334f;color:#6dccff}.sep{height:1px;background:var(--line);margin:3px 2px}
+.bottom{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;background:#091827e8;border:1px solid var(--line);border-radius:18px;padding:8px;display:flex;gap:8px;align-items:center;z-index:3}.range{width:90px}.color{width:30px;height:30px;border:0;border-radius:50%;padding:0}.status{position:absolute;right:14px;top:14px;background:#091827e8;border:1px solid var(--line);padding:9px 12px;border-radius:12px;font-size:12px;z-index:3}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:6px}
+.overlay{position:absolute;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:10}.modal{width:min(430px,95vw);background:#0b1a2b;border:1px solid #29445e;border-radius:24px;padding:24px;text-align:center}.modal p{color:var(--muted);font-size:14px}.qr{width:230px;height:230px;background:white;border-radius:15px;padding:8px}.code{font-size:24px;letter-spacing:5px;font-weight:800}.close{width:100%;margin-top:15px}.toast{position:fixed;left:50%;top:76px;transform:translateX(-50%);background:#0c1b2d;border:1px solid #29445e;border-radius:12px;padding:10px 14px;display:none;z-index:20;font-size:13px}
+.mobile .top{height:56px}.mobile .brand small{display:none}.mobile .side{left:8px;right:8px;top:auto;bottom:8px;width:auto;height:60px;flex-direction:row;justify-content:center}.mobile .side .sep{display:none}.mobile .bottom{bottom:78px}.mobile .status{top:8px;right:8px}
+@media(max-width:700px){.secondary{display:none}.side{width:50px}.bottom{max-width:calc(100vw - 80px);overflow:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand"><div class="logo">✦</div><div>AirBoard<small>LOUSA DIGITAL COLABORATIVA</small></div></div>
+  <div class="actions">
+    <button class="btn secondary" id="present">⛶ Apresentar</button>
+    <button class="btn" id="connect">⌁ Conectar</button>
+    <button class="btn primary" id="save">↓ Salvar</button>
+  </div>
+</header>
+<main class="workspace">
+<canvas id="board" class="board"></canvas>
+<div class="status"><span class="dot"></span><span id="status">Sala pronta</span></div>
+<nav class="side">
+<button class="tool active" data-tool="pen">✎</button>
+<button class="tool" data-tool="highlighter">▰</button>
+<button class="tool" data-tool="eraser">⌫</button>
+<div class="sep"></div>
+<button class="tool" data-tool="line">╱</button>
+<button class="tool" data-tool="rect">□</button>
+<button class="tool" data-tool="circle">○</button>
+<button class="tool" data-tool="text">T</button>
+<div class="sep"></div>
+<button class="tool" data-tool="laser">⌖</button>
+</nav>
+<div class="bottom">
+<input class="color" id="color" type="color" value="#111827">
+<input class="range" id="size" type="range" min="1" max="30" value="4">
+<button class="btn" id="clear">Limpar</button>
+</div>
+<div class="overlay" id="modal"><div class="modal">
+<h2>Conectar celular / tablet</h2><p>Escaneie o QR Code. PC/TV e celular precisam estar na mesma rede Wi‑Fi.</p>
+<img id="qr" class="qr"><div class="code" id="roomCode">------</div>
+<p id="network"></p><button class="btn close" id="close">Fechar</button>
+</div></div>
+</main></div>
+<div class="toast" id="toast"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket=io(),qs=new URLSearchParams(location.search),isMobile=qs.has("join");
+if(isMobile)document.body.classList.add("mobile");
+const canvas=document.getElementById("board"),ctx=canvas.getContext("2d");
+let room=(qs.get("join")||Math.random().toString(36).slice(2,8)).toUpperCase();
+let tool="pen",drawing=false,last,start,laserTimer;
+
+function resize(){const d=devicePixelRatio||1,r=canvas.getBoundingClientRect();canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0)}
+resize();addEventListener("resize",resize);socket.emit("join-room",room);
+document.getElementById("status").textContent=isMobile?"Celular conectado":"Sala "+room;
+
+function pt(e){const r=canvas.getBoundingClientRect(),t=e.touches?.[0]||e;return{x:t.clientX-r.left,y:t.clientY-r.top}}
+function drawStroke(a,b,emit=true,opts={}){ctx.save();ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle=opts.color||document.getElementById("color").value;ctx.lineWidth=opts.size||+document.getElementById("size").value;ctx.globalCompositeOperation=opts.tool==="eraser"?"destination-out":"source-over";ctx.globalAlpha=opts.tool==="highlighter"?.25:1;if(opts.tool==="highlighter")ctx.lineWidth*=3;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();if(emit)socket.emit("stroke",{room,a,b,color:document.getElementById("color").value,size:+document.getElementById("size").value,tool})}
+function shape(a,b,type,emit=true,d={}){ctx.save();ctx.strokeStyle=d.color||document.getElementById("color").value;ctx.lineWidth=d.size||+document.getElementById("size").value;ctx.beginPath();if(type==="line"){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)}else if(type==="rect")ctx.rect(a.x,a.y,b.x-a.x,b.y-a.y);else ctx.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.max(1,Math.abs(b.x-a.x)/2),Math.max(1,Math.abs(b.y-a.y)/2),0,0,Math.PI*2);ctx.stroke();ctx.restore();if(emit)socket.emit("shape",{room,a,b,type,color:document.getElementById("color").value,size:+document.getElementById("size").value})}
+function down(e){if(e.cancelable)e.preventDefault();const p=pt(e);if(tool==="text"){const t=prompt("Digite o texto:");if(t){ctx.fillStyle=document.getElementById("color").value;ctx.font=`${Math.max(18,+document.getElementById("size").value*5)}px Arial`;ctx.fillText(t,p.x,p.y);socket.emit("text",{room,p,txt:t,color:document.getElementById("color").value,size:+document.getElementById("size").value})}return}drawing=true;last=start=p}
+function move(e){if(!drawing)return;if(e.cancelable)e.preventDefault();const p=pt(e);if(["pen","highlighter","eraser"].includes(tool)){drawStroke(last,p,true,{tool});last=p}}
+function up(e){if(!drawing)return;drawing=false;const p=pt(e);if(["line","rect","circle"].includes(tool))shape(start,p,tool)}
+canvas.addEventListener("mousedown",down);canvas.addEventListener("mousemove",move);addEventListener("mouseup",up);canvas.addEventListener("touchstart",down,{passive:false});canvas.addEventListener("touchmove",move,{passive:false});addEventListener("touchend",up);
+
+document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-tool]").forEach(x=>x.classList.remove("active"));b.classList.add("active");tool=b.dataset.tool});
+function toast(t){const x=document.getElementById("toast");x.textContent=t;x.style.display="block";clearTimeout(window._t);window._t=setTimeout(()=>x.style.display="none",2000)}
+document.getElementById("clear").onclick=()=>{ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);socket.emit("clear",room);toast("Lousa limpa")};
+document.getElementById("save").onclick=()=>{const a=document.createElement("a");a.download=`airboard-${room}.png`;a.href=canvas.toDataURL("image/png");a.click();toast("Imagem salva")};
+document.getElementById("present").onclick=()=>document.documentElement.requestFullscreen?.();
+document.getElementById("connect").onclick=async()=>{const d=await fetch("/api/room/"+room).then(r=>r.json());document.getElementById("qr").src=d.qr;document.getElementById("roomCode").textContent=d.room;document.getElementById("network").textContent=d.url;document.getElementById("modal").style.display="flex"};
+document.getElementById("close").onclick=()=>document.getElementById("modal").style.display="none";
+
+socket.on("stroke",d=>drawStroke(d.a,d.b,false,d));
+socket.on("shape",d=>shape(d.a,d.b,d.type,false,d));
+socket.on("text",d=>{ctx.fillStyle=d.color;ctx.font=`${Math.max(18,d.size*5)}px Arial`;ctx.fillText(d.txt,d.p.x,d.p.y)});
+socket.on("clear",()=>ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight));
+socket.on("laser",d=>{ctx.save();ctx.fillStyle="red";ctx.shadowBlur=18;ctx.shadowColor="red";ctx.beginPath();ctx.arc(d.p.x,d.p.y,7,0,Math.PI*2);ctx.fill();ctx.restore();clearTimeout(laserTimer);laserTimer=setTimeout(()=>{},100)});
+canvas.addEventListener("mousemove",e=>{if(tool==="laser")socket.emit("laser",{room,p:pt(e)})});
+if(isMobile){toast("Conectado à sala "+room);document.getElementById("connect").textContent="✓ Conectado"}
+</script>
+</body></html>
