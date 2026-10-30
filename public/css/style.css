@@ -1,0 +1,153 @@
+/* AirBoard Pro — estilos */
+:root {
+  --bg: #07111f;
+  --panel: rgba(9, 24, 39, .91);
+  --line: #23405b;
+  --text: #f5f8fc;
+  --muted: #91a4b8;
+  --a: #18a8ff;
+  --b: #6d5dfc;
+  --ok: #34d399;
+  --bad: #f87171;
+}
+
+* { box-sizing: border-box }
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 20% 0, #123b61, #07111f 40%, #050b13);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.app { height: 100dvh; display: flex; flex-direction: column }
+
+/* ---------- Topbar ---------- */
+.top {
+  height: 64px;
+  background: #081525e8;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; backdrop-filter: blur(16px); z-index: 5;
+}
+.brand { display: flex; gap: 10px; align-items: center; font-weight: 800 }
+.logo {
+  width: 36px; height: 36px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--a), var(--b));
+  display: grid; place-items: center; font-size: 18px;
+}
+.brand small { display: block; color: var(--muted); font-size: 9px; font-weight: 500; letter-spacing: .08em }
+.actions { display: flex; gap: 8px; align-items: center }
+.pill {
+  background: #10243a; border: 1px solid #294762; border-radius: 999px;
+  padding: 6px 12px; font-size: 12px; font-weight: 700; letter-spacing: .12em; color: #9fd4ff;
+}
+
+.btn {
+  background: #10243a; border: 1px solid #294762; padding: 9px 12px;
+  border-radius: 10px; color: white; cursor: pointer; font-size: 13px;
+  transition: filter .15s, transform .05s;
+}
+.btn:hover { filter: brightness(1.2) }
+.btn:active { transform: scale(.97) }
+.btn.primary { background: linear-gradient(135deg, #0c9ef0, #6655ed); border: 0 }
+.btn.danger { border-color: #7f2b3a; color: #ffb3bd }
+.btn.danger:hover { background: #4a1420 }
+
+/* ---------- Workspace ---------- */
+.workspace { position: relative; flex: 1; min-height: 0 }
+.board {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  background: white; touch-action: none; cursor: crosshair;
+}
+
+/* ---------- Barra lateral de ferramentas ---------- */
+.side {
+  position: absolute; left: 14px; top: 14px; bottom: 14px; width: 62px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+  padding: 8px; display: flex; flex-direction: column; gap: 7px; z-index: 3;
+  backdrop-filter: blur(16px);
+}
+.tool {
+  height: 46px; border-radius: 12px; background: transparent; color: #c8d5e2;
+  font-size: 20px; border: 0; cursor: pointer; transition: background .15s;
+}
+.tool:hover { background: #12293f }
+.tool.active { background: #17334f; color: #6dccff; box-shadow: inset 0 0 0 1px #2b6ea3 }
+.sep { height: 1px; background: var(--line); margin: 3px 2px }
+
+/* ---------- Barra inferior ---------- */
+.bottom {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+  padding: 8px 12px; display: flex; gap: 10px; align-items: center; z-index: 3;
+  backdrop-filter: blur(16px); max-width: calc(100vw - 120px);
+}
+.swatches { display: flex; gap: 6px }
+.swatch {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; padding: 0; transition: transform .1s;
+}
+.swatch:hover { transform: scale(1.15) }
+.swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--a) }
+.range { width: 90px; accent-color: var(--a) }
+.color { width: 30px; height: 30px; border: 0; border-radius: 50%; padding: 0; background: none; cursor: pointer }
+.sizeWrap { display: flex; align-items: center; gap: 8px }
+.sizeDot {
+  display: inline-block; border-radius: 50%; background: #111827;
+  width: 6px; height: 6px; min-width: 3px; min-height: 3px;
+}
+
+/* ---------- Status ---------- */
+.status {
+  position: absolute; right: 14px; top: 14px; background: var(--panel);
+  border: 1px solid var(--line); padding: 9px 12px; border-radius: 12px;
+  font-size: 12px; z-index: 3; display: flex; align-items: center; gap: 8px;
+  backdrop-filter: blur(16px);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none }
+.dot.offline { background: var(--bad) }
+.users { color: var(--muted) }
+
+/* ---------- Modal ---------- */
+.overlay {
+  position: absolute; inset: 0; background: #0009; display: none;
+  align-items: center; justify-content: center; z-index: 10;
+}
+.modal {
+  width: min(430px, 95vw); background: #0b1a2b; border: 1px solid #29445e;
+  border-radius: 24px; padding: 24px; text-align: center;
+}
+.modal p { color: var(--muted); font-size: 14px }
+.qr { width: 230px; height: 230px; background: white; border-radius: 15px; padding: 8px }
+.code { font-size: 24px; letter-spacing: 5px; font-weight: 800 }
+.mono { font-family: ui-monospace, monospace; user-select: all; word-break: break-all }
+.close { width: 100%; margin-top: 15px }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; top: 76px; transform: translateX(-50%);
+  background: #0c1b2d; border: 1px solid #29445e; border-radius: 12px;
+  padding: 10px 14px; display: none; z-index: 20; font-size: 13px;
+  box-shadow: 0 8px 30px #0008;
+}
+
+/* ---------- Mobile ---------- */
+.mobile .top { height: 56px }
+.mobile .brand small { display: none }
+.mobile .pill { display: none }
+.mobile .side {
+  left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 60px;
+  flex-direction: row; justify-content: center; overflow-x: auto; gap: 4px;
+}
+.mobile .side .sep { display: none }
+.mobile .bottom { bottom: 78px }
+.mobile .status { top: 8px; right: 8px }
+
+@media (max-width: 700px) {
+  .secondary { display: none }
+  .side { width: 50px }
+  .bottom { max-width: calc(100vw - 80px); overflow: auto }
+}
